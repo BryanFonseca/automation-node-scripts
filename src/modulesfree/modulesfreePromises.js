@@ -45,11 +45,6 @@ async function searchModulesFolder(searchedName, dirPath) {
   return hasModulesFolder;
 }
 
-/* async function init() {
-  const results = await simpleFindDirs("src", "../../");
-  results.forEach((result) => console.log(result));
-} */
-
 function prompt(text) {
   return new Promise((resolve) => {
     readline.question(text, (response) => {
