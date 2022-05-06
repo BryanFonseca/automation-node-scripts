@@ -8,46 +8,40 @@ const readline = require("readline").createInterface({
   output: process.stdout,
 });
 
-function searchModulesFolder(searchedName, dirPath) {
-  return fs
-    .readdir(dirPath, {
-      withFileTypes: true,
-    })
-    .then((dirent) => {
-      const subDirs = dirent.filter((node) => node.isDirectory());
-      const hasModulesFolder = !!subDirs.find(
-        (dir) => dir.name === searchedName
-      );
-      return hasModulesFolder;
-    });
+async function simpleFindDirs(searchedName, startPath = ".") {
+  const dirents = await fs.readdir(startPath, {
+    withFileTypes: true,
+  });
+  const dirs = dirents.filter((dirent) => dirent.isDirectory());
+  const dirsWithModulesFolder = dirs.map(async (dir) => {
+    const dirPath = path.join(startPath, dir.name);
+    const hasModulesFolder = await searchModulesFolder(searchedName, dirPath);
+    return {
+      path: dirPath,
+      hasModulesFolder,
+    };
+  });
+  const result = await Promise.all(dirsWithModulesFolder).then((result) => {
+    return result
+      .filter((directory) => directory.hasModulesFolder)
+      .map((directory) => directory.path);
+  });
+
+  return result;
 }
 
-function simpleFindDirs(searchedName, startPath = ".") {
-  return fs
-    .readdir(startPath, {
-      withFileTypes: true,
-    })
-    .then((dirents) => {
-      const dirs = dirents.filter((dirent) => dirent.isDirectory());
-      const dirsWithModulesFolder = dirs.map((dir) => {
-        const dirPath = path.join(startPath, dir.name);
-        return searchModulesFolder(searchedName, dirPath).then(
-          (hasModulesFolder) => {
-            return {
-              path: dirPath,
-              hasModulesFolder,
-            };
-          }
-        );
-      });
-      return Promise.all(dirsWithModulesFolder).then((result) => {
-        return result
-          .filter((directory) => directory.hasModulesFolder)
-          .map((directory) => directory.path);
-      });
-    });
+async function searchModulesFolder(searchedName, dirPath) {
+  const dirent = await fs.readdir(dirPath, {
+    withFileTypes: true,
+  });
+  const subDirs = dirent.filter((node) => node.isDirectory());
+  const hasModulesFolder = !!subDirs.find((dir) => dir.name === searchedName);
+  return hasModulesFolder;
 }
 
-simpleFindDirs("src", "../../../node_test").then((result) => {
-  console.log(result);
-});
+async function init() {
+  const results = await simpleFindDirs("src", "../../");
+  results.forEach((result) => console.log(result));
+}
+
+init();
