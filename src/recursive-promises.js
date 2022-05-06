@@ -23,7 +23,6 @@ function searchModulesFolder(searchedName, dirPath) {
 }
 
 function simpleFindDirs(searchedName, startPath = ".") {
-  const paths = [];
   return fs
     .readdir(startPath, {
       withFileTypes: true,
@@ -34,15 +33,18 @@ function simpleFindDirs(searchedName, startPath = ".") {
         const dirPath = path.join(startPath, dir.name);
         return searchModulesFolder(searchedName, dirPath).then(
           (hasModulesFolder) => {
-            if (hasModulesFolder) {
-              paths.push(dirPath + `/${searchedName}`);
-              // so that the array of answers is not empty
-              return true;
-            }
+            return {
+              path: dirPath,
+              hasModulesFolder,
+            };
           }
         );
       });
-      return Promise.all(dirsWithModulesFolder).then(() => paths);
+      return Promise.all(dirsWithModulesFolder).then((result) => {
+        return result
+          .filter((directory) => directory.hasModulesFolder)
+          .map((directory) => directory.path);
+      });
     });
 }
 
